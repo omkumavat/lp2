@@ -1,139 +1,128 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-void printBoard(vector<int> &board, int n)
+class BacktrackingSolver
 {
-    for (int i = 0; i < n; i++)
+public:
+    bool isSafe(int row, int col, vector<string> &board, int n)
     {
-        for (int j = 0; j < n; j++)
+        // upper-left diagonal
+        for (int i = row, j = col; i >= 0 && j >= 0; i--, j--)
+            if (board[i][j] == 'Q')
+                return false;
+
+        // left side
+        for (int j = col; j >= 0; j--)
+            if (board[row][j] == 'Q')
+                return false;
+
+        // lower-left diagonal
+        for (int i = row, j = col; i < n && j >= 0; i++, j--)
+            if (board[i][j] == 'Q')
+                return false;
+
+        return true;
+    }
+
+    void solve(int col, vector<string> &board, vector<vector<string>> &ans, int n, int &count)
+    {
+        if (col == n)
         {
-            if (board[i] == j)
-                cout << "Q ";
-            else
-                cout << ". ";
+            ans.push_back(board);
+            count++;
+            return;
         }
-        cout << endl;
-    }
-    cout << endl;
-}
 
-bool isSafeBacktracking(vector<int> &board, int row, int col)
-{
-    for (int i = 0; i < row; i++)
-    {
-        if (board[i] == col || abs(board[i] - col) == abs(i - row))
+        for (int row = 0; row < n; row++)
         {
-            return false;
-        }
-    }
-    return true;
-}
-
-void solveNQueensBacktracking(vector<int> &board, int row, int n, int &solutions)
-{
-    if (row == n)
-    {
-        printBoard(board, n);
-        solutions++;
-        return;
-    }
-
-    for (int col = 0; col < n; col++)
-    {
-        if (isSafeBacktracking(board, row, col))
-        {
-            board[row] = col;
-            solveNQueensBacktracking(board, row + 1, n, solutions);
-            board[row] = -1;
+            if (isSafe(row, col, board, n))
+            {
+                board[row][col] = 'Q';
+                solve(col + 1, board, ans, n, count);
+                board[row][col] = '.';
+            }
         }
     }
-}
 
-void solveNQueensUsingBacktracking(int n)
-{
-    int solutions = 0;
-    vector<int> board(n, -1);
-    solveNQueensBacktracking(board, 0, n, solutions);
-
-    if (solutions == 0)
+    pair<vector<vector<string>>, int> solveNQueens(int n)
     {
-        cout << "Solution does not exist!" << endl;
+        vector<vector<string>> ans;
+        vector<string> board(n, string(n, '.'));
+        int count = 0;
+        solve(0, board, ans, n, count);
+        return {ans, count};
     }
-    else
-    {
-        cout << "Total number of solutions: " << solutions << endl;
-    }
-}
+};
 
-bool isSafeBranchAndBound(vector<int> &board, int row, int col, int n)
+class BranchBoundSolver
 {
-    for (int i = 0; i < row; i++)
+public:
+    void solve(int col, vector<string> &board, vector<vector<string>> &ans,
+               vector<bool> &leftRow, vector<bool> &upperDiag, vector<bool> &lowerDiag,
+               int n, int &count)
     {
-        if (board[i] == col || abs(board[i] - col) == abs(i - row))
+        if (col == n)
         {
-            return false;
+            ans.push_back(board);
+            count++;
+            return;
+        }
+
+        for (int row = 0; row < n; row++)
+        {
+            if (!leftRow[row] && !lowerDiag[row + col] && !upperDiag[n - 1 + col - row])
+            {
+                board[row][col] = 'Q';
+                leftRow[row] = lowerDiag[row + col] = upperDiag[n - 1 + col - row] = true;
+
+                solve(col + 1, board, ans, leftRow, upperDiag, lowerDiag, n, count);
+
+                board[row][col] = '.';
+                leftRow[row] = lowerDiag[row + col] = upperDiag[n - 1 + col - row] = false;
+            }
         }
     }
-    return true;
-}
 
-void solveNQueensBranchAndBound(vector<int> &board, int row, int n, int &solutions)
-{
-    if (row == n)
+    pair<vector<vector<string>>, int> solveNQueens(int n)
     {
-        printBoard(board, n);
-        solutions++;
-        return;
+        vector<vector<string>> ans;
+        vector<string> board(n, string(n, '.'));
+        vector<bool> leftRow(n, false), upperDiag(2 * n - 1, false), lowerDiag(2 * n - 1, false);
+        int count = 0;
+        solve(0, board, ans, leftRow, upperDiag, lowerDiag, n, count);
+        return {ans, count};
     }
-
-    for (int col = 0; col < n; col++)
-    {
-        if (isSafeBranchAndBound(board, row, col, n))
-        {
-            board[row] = col;
-            solveNQueensBranchAndBound(board, row + 1, n, solutions);
-            board[row] = -1;
-        }
-    }
-}
-
-void solveNQueensUsingBranchAndBound(int n)
-{
-    vector<int> board(n, -1);
-    int solutions = 0;
-    solveNQueensBranchAndBound(board, 0, n, solutions);
-    if (solutions == 0)
-    {
-        cout << "Solution does not exist!" << endl;
-    }
-    else
-    {
-        cout << "Total number of solutions: " << solutions << endl;
-    }
-}
+};
 
 int main()
 {
-    int choice, n;
-    cout << "Enter the number of queens (n): ";
-    cin >> n;
+    int n = 4;
 
-    cout << "1. Solve using Backtracking\n";
-    cout << "2. Solve using Branch and Bound\n";
-    cout << "Enter your choice: ";
-    cin >> choice;
-
-    switch (choice)
+    cout << "== Backtracking Solution ==\n";
+    BacktrackingSolver btSolver;
+    vector<vector<string>> btAns = btSolver.solveNQueens(n).first;
+    int btCount = btSolver.solveNQueens(n).second;
+    for (int i = 0; i < btAns.size(); ++i)
     {
-    case 1:
-        solveNQueensUsingBacktracking(n);
-        break;
-    case 2:
-        solveNQueensUsingBranchAndBound(n);
-        break;
-    default:
-        cout << "Invalid choice!\n";
+        cout << "Arrangement " << i + 1 << ":\n";
+        for (auto row : btAns[i])
+            cout << row << endl;
+        cout << endl;
     }
+    cout << "Total Solutions (Backtracking): " << btCount << "\n\n";
+
+    cout << "== Branch and Bound Solution ==\n";
+    BranchBoundSolver bbSolver;
+    vector<vector<string>> bbAns = bbSolver.solveNQueens(n).first;
+    int bbCount = btSolver.solveNQueens(n).second;
+    for (int i = 0; i < bbAns.size(); ++i)
+    {
+        cout << "Arrangement " << i + 1 << ":\n";
+        for (auto row : bbAns[i])
+            cout << row << endl;
+        cout << endl;
+    }
+    cout << "Total Solutions (Branch and Bound): " << bbCount << "\n";
 
     return 0;
 }
