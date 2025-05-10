@@ -1,0 +1,601 @@
+public class Salesforce {
+    public String shapeType { get; set; }
+    public Double length { get; set; }
+    public Double breadth { get; set; }
+    public Double radius { get; set; }
+    public Double base { get; set; }
+    public Double height { get; set; }
+    public Double area { get; set; }
+    public Boolean isCalculated { get; set; }
+
+    // Constructor
+    public Salesforce() {
+        shapeType = 'Rectangle'; // Default shape
+        isCalculated = false;
+    }
+
+    // Method to get shape options for the dropdown
+    public List<SelectOption> getListOptions() {
+        List<SelectOption> options = new List<SelectOption>();
+        options.add(new SelectOption('Rectangle', 'Rectangle'));
+        options.add(new SelectOption('Circle', 'Circle'));
+        options.add(new SelectOption('Triangle', 'Triangle'));
+        return options;
+    }
+
+    // Method to calculate area
+    public void calculateArea() {
+        isCalculated = true;
+
+        if (shapeType == 'Rectangle') {
+            if (length != null && breadth != null) {
+                area = length * breadth;
+            } else {
+                area = null;
+            }
+        } else if (shapeType == 'Circle') {
+            if (radius != null) {
+                area = Math.PI * radius * radius;
+            } else {
+                area = null;
+            }
+        } else if (shapeType == 'Triangle') {
+            if (base != null && height != null) {
+                area = 0.5 * base * height;
+            } else {
+                area = null;
+            }
+        }
+    }
+}
+
+
+<apex:page controller="Salesforce">
+    <apex:form >
+        <apex:pageBlock title="Geometry Area Calculator">
+        
+            <!-- Shape Selection -->
+            <apex:pageBlockSection title="Select Shape" columns="1">
+                <apex:selectList value="{!shapeType}" size="1">
+                    <apex:selectOptions value="{!listOptions}" />
+                    <apex:actionSupport event="onchange" rerender="inputSection, resultSection" />
+                </apex:selectList>
+            </apex:pageBlockSection>
+
+            <!-- Input Fields -->
+            <apex:pageBlockSection id="inputSection" title="Enter Dimensions" columns="2">
+
+                <!-- Rectangle Inputs -->
+                <apex:outputPanel rendered="{!shapeType == 'Rectangle'}" layout="block">
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Length"/>
+                        <apex:inputText value="{!length}" />
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Breadth"/>
+                        <apex:inputText value="{!breadth}" />
+                    </apex:pageBlockSectionItem>
+                </apex:outputPanel>
+
+                <!-- Circle Inputs -->
+                <apex:outputPanel rendered="{!shapeType == 'Circle'}" layout="block">
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Radius"/>
+                        <apex:inputText value="{!radius}" />
+                    </apex:pageBlockSectionItem>
+                </apex:outputPanel>
+
+                <!-- Triangle Inputs -->
+                <apex:outputPanel rendered="{!shapeType == 'Triangle'}" layout="block">
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Base"/>
+                        <apex:inputText value="{!base}" />
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Height"/>
+                        <apex:inputText value="{!height}" />
+                    </apex:pageBlockSectionItem>
+                </apex:outputPanel>
+
+            </apex:pageBlockSection>
+
+            <!-- Button to Calculate Area -->
+            <apex:pageBlockButtons >
+                <apex:commandButton value="Calculate Area" action="{!calculateArea}" rerender="resultSection"/>
+            </apex:pageBlockButtons>
+
+            <!-- Result -->
+            <apex:pageBlockSection id="resultSection" title="Result" columns="1">
+                <apex:outputText value="Area: {!IF(isCalculated, TEXT(area), '')}" 
+                                 rendered="{!isCalculated}" 
+                                 style="font-weight:bold; font-size:16px;"/>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>
+
+ public class Salesforce {
+    
+    // Properties bound to Visualforce input
+    public String sourceCurrency { get; set; }
+    public String targetCurrency { get; set; }
+    public Decimal amount { get; set; }
+    public Decimal convertedAmount { get; set; }
+
+    // List of available currencies
+    public List<SelectOption> getCurrencies() {
+        return new List<SelectOption>{
+            new SelectOption('USD', 'USD'),
+            new SelectOption('EUR', 'EUR'),
+            new SelectOption('INR', 'INR'),
+            new SelectOption('GBP', 'GBP'),
+            new SelectOption('JPY', 'JPY')
+        };
+    }
+
+    // Conversion logic
+    public void convertCurrency() {
+        Map<String, Map<String, Decimal>> exchangeRates = new Map<String, Map<String, Decimal>>();
+
+        // Define exchange rates manually for demo
+        exchangeRates.put('USD', new Map<String, Decimal>{
+            'INR' => 83.0,
+            'EUR' => 0.93,
+            'GBP' => 0.79,
+            'JPY' => 154.5
+        });
+        exchangeRates.put('INR', new Map<String, Decimal>{
+            'USD' => 0.012,
+            'EUR' => 0.011,
+            'GBP' => 0.0095,
+            'JPY' => 1.86
+        });
+        exchangeRates.put('EUR', new Map<String, Decimal>{
+            'USD' => 1.07,
+            'INR' => 89.5,
+            'GBP' => 0.85,
+            'JPY' => 166.4
+        });
+        exchangeRates.put('GBP', new Map<String, Decimal>{
+            'USD' => 1.27,
+            'INR' => 105.5,
+            'EUR' => 1.17,
+            'JPY' => 195.2
+        });
+        exchangeRates.put('JPY', new Map<String, Decimal>{
+            'USD' => 0.0065,
+            'INR' => 0.54,
+            'EUR' => 0.006,
+            'GBP' => 0.0051
+        });
+
+        if(sourceCurrency == targetCurrency) {
+            convertedAmount = amount;
+        } else if(exchangeRates.containsKey(sourceCurrency) && exchangeRates.get(sourceCurrency).containsKey(targetCurrency)) {
+            Decimal rate = exchangeRates.get(sourceCurrency).get(targetCurrency);
+            convertedAmount = amount * rate;
+        } else {
+            ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.ERROR, 'Conversion rate not available.'));
+        }
+    }
+}
+
+            <apex:page controller="Salesforce">
+    <apex:form >
+        <apex:pageMessages />
+        <apex:pageBlock title="Currency Converter">
+            <apex:pageBlockSection columns="2">
+
+                <apex:outputLabel value="From Currency" for="fromCurrency" />
+                <apex:selectList value="{!sourceCurrency}" size="1" id="fromCurrency">
+                    <apex:selectOptions value="{!currencies}" />
+                </apex:selectList>
+
+                <apex:outputLabel value="To Currency" for="toCurrency" />
+                <apex:selectList value="{!targetCurrency}" size="1" id="toCurrency">
+                    <apex:selectOptions value="{!currencies}" />
+                </apex:selectList>
+
+                <apex:outputLabel value="Amount" for="amountInput" />
+                <apex:inputText value="{!amount}" id="amountInput" />
+
+                <apex:commandButton value="Convert" action="{!convertCurrency}" reRender="resultBlock"/>
+
+            </apex:pageBlockSection>
+
+            <apex:pageBlockSection id="resultBlock" columns="1">
+                <apex:outputText value="Converted Amount: {!convertedAmount}" rendered="{!NOT(ISNULL(convertedAmount))}" />
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>
+
+public class Salesforce {
+    
+    // User inputs
+    public Decimal principal { get; set; }
+    public Decimal rate { get; set; }
+    public Decimal t { get; set; }
+    public Integer n { get; set; } // Number of times interest applied per time period (for CI)
+
+    // Results
+    public Decimal simpleInterest { get; set; }
+    public Decimal compoundInterest { get; set; }
+
+    // Constructor to initialize default values
+    public Salesforce() {
+        principal = 0;
+        rate = 0;
+        t = 0;
+        n = 1;
+    }
+
+    // Action method to calculate interest
+    public void calculateInterest() {
+        // Simple Interest: SI = (P × R × T) / 100
+        simpleInterest = (principal * rate * t) / 100;
+
+        // Compound Interest: CI = P × (1 + R/(100*n))^(n*T) - P
+       Double base = 1 + (rate.doubleValue() / (100 * n));
+Double exponent = n * t;
+Double amount = principal.doubleValue() * Math.pow(base, exponent);
+compoundInterest = Decimal.valueOf(amount) - principal;
+
+    }
+}
+
+<apex:page controller="Salesforce">
+    <apex:form >
+        <apex:pageMessages />
+        <apex:pageBlock title="Interest Calculator">
+            <apex:pageBlockSection columns="2">
+
+                <apex:outputLabel value="Principal Amount" for="principal" />
+                <apex:inputText value="{!principal}" id="principal" />
+
+                <apex:outputLabel value="Annual Rate of Interest (%)" for="rate" />
+                <apex:inputText value="{!rate}" id="rate" />
+
+                <apex:outputLabel value="Time (in years)" for="t" />
+                <apex:inputText value="{!t}" id="t" />
+
+                <apex:outputLabel value="Compounded (n times per year)" for="n" />
+                <apex:inputText value="{!n}" id="n" />
+
+                <apex:commandButton value="Calculate" action="{!calculateInterest}" reRender="resultBlock" />
+
+            </apex:pageBlockSection>
+
+            <apex:pageBlockSection title="Results" id="resultBlock">
+                <apex:outputText value="Simple Interest: {!simpleInterest}" rendered="{!NOT(ISNULL(simpleInterest))}" /><br/>
+                <apex:outputText value="Compound Interest: {!compoundInterest}" rendered="{!NOT(ISNULL(compoundInterest))}" />
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>
+
+ public class Salesforce {
+
+    // User input
+    public Decimal inputTemperature { get; set; }
+    public String conversionType { get; set; }
+
+    // Result
+    public Decimal resultTemperature { get; set; }
+
+    public Salesforce() {
+        inputTemperature = 0;
+        conversionType = 'CtoF'; // default
+        resultTemperature = null;
+    }
+
+    // Conversion logic
+    public void convertTemperature() {
+        if (conversionType == 'CtoF') {
+            // Celsius to Fahrenheit: F = C * 9/5 + 32
+            resultTemperature = (inputTemperature * 9 / 5) + 32;
+        } else if (conversionType == 'FtoC') {
+            // Fahrenheit to Celsius: C = (F - 32) * 5/9
+            resultTemperature = (inputTemperature - 32) * 5 / 9;
+        }
+    }
+
+    // Dropdown options
+    public List<SelectOption> getConversionOptions() {
+        return new List<SelectOption>{
+            new SelectOption('CtoF', 'Celsius to Fahrenheit'),
+            new SelectOption('FtoC', 'Fahrenheit to Celsius')
+        };
+    }
+}
+
+<apex:page controller="Salesforce">
+    <apex:form>
+        <apex:pageMessages />
+        <apex:pageBlock title="Temperature Converter">
+            <apex:pageBlockSection columns="2">
+
+                <apex:outputLabel value="Enter Temperature" for="inputTemp" />
+                <apex:inputText value="{!inputTemperature}" id="inputTemp" />
+
+                <apex:outputLabel value="Conversion Type" for="conversionType" />
+                <apex:selectList value="{!conversionType}" size="1" id="conversionType">
+                    <apex:selectOptions value="{!conversionOptions}" />
+                </apex:selectList>
+
+                <apex:commandButton value="Convert" action="{!convertTemperature}" reRender="resultBlock" />
+
+            </apex:pageBlockSection>
+
+            <apex:pageBlockSection id="resultBlock">
+                <apex:outputText value="Converted Temperature: {!resultTemperature}" rendered="{!NOT(ISNULL(resultTemperature))}" />
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>
+
+public class Salesforce {
+    // Bound to VF input; Integer so arithmetic stays integral
+    public Integer inputNumber { get; set; }
+    public String  resultMessage { get; set; }
+
+    public Salesforce() {
+        inputNumber   = 0;
+        resultMessage = '';
+    }
+
+    public void checkPrime() {
+        if (inputNumber <= 1) {
+            resultMessage = 'Please enter an integer greater than 1.';
+            return;
+        }
+
+        Integer n = inputNumber;
+        Boolean isPrime = true;
+
+        // Compute integer bound = floor(sqrt(n))
+        Double rawSqrt = Math.sqrt(n);
+        Integer bound = (Integer) Math.floor(rawSqrt);
+
+        for (Integer i = 2; i <= bound; i++) {
+            // Divide and see if it divides evenly:
+            Decimal quotient = n / i;                 // e.g. 10 / 3 = 3.333...
+            Integer intQuot  = quotient.intValue();  // truncates to 3
+            if (intQuot * i == n) {
+                // n is exactly intQuot * i ⇒ divisible
+                isPrime = false;
+                break;
+            }
+        }
+
+        if (isPrime) {
+            resultMessage = n + ' is a Prime Number.';
+        } else {
+            resultMessage = n + ' is NOT a Prime Number.';
+        }
+    }
+}
+
+<apex:page controller="Salesforce">
+  <apex:form>
+    <apex:pageBlock title="Prime Number Checker">
+      <apex:pageMessages />
+
+      <apex:pageBlockSection columns="1">
+        <apex:outputLabel value="Enter an Integer (>1):" for="num"/>
+        <apex:inputText  value="{!inputNumber}" id="num"/>
+        <apex:commandButton value="Check" action="{!checkPrime}" rerender="results"/>
+      </apex:pageBlockSection>
+
+      <apex:pageBlockSection id="results" columns="1">
+        <apex:outputText value="{!resultMessage}"
+                         rendered="{!NOT(ISNULL(resultMessage))}"
+                         style="font-weight:bold; font-size:1.1em;"/>
+      </apex:pageBlockSection>
+    </apex:pageBlock>
+  </apex:form>
+</apex:page>
+
+public class Salesforce {
+    public Integer termCount { get; set; }
+    public List<Integer> series { get; set; }
+
+    public Salesforce() {
+        termCount = 0;
+        series = new List<Integer>();
+    }
+
+    public void generateSeries() {
+        series.clear();
+        if (termCount == null || termCount <= 0) {
+            return;
+        }
+
+        series.add(0);
+        if (termCount == 1) return;
+
+        series.add(1);
+        for (Integer i = 2; i < termCount; i++) {
+            Integer next = series[i - 1] + series[i - 2];
+            series.add(next);
+        }
+    }
+}
+
+<apex:page controller="Salesforce">
+  <apex:form>
+    <apex:pageBlock title="Fibonacci Series Generator">
+      <apex:pageMessages />
+
+      <apex:pageBlockSection columns="1">
+        <apex:outputLabel value="Number of Terms (N):" for="count"/>
+        <apex:inputText value="{!termCount}" id="count"/>
+        <apex:commandButton value="Generate" action="{!generateSeries}" rerender="output"/>
+      </apex:pageBlockSection>
+
+      <apex:pageBlockSection id="output" title="Result" columns="1">
+        <apex:outputPanel rendered="{!NOT(ISNULL(series))}">
+          <apex:repeat value="{!series}" var="num">
+            <apex:outputText value="{!num}" />
+            <apex:outputText value=", " />
+          </apex:repeat>
+        </apex:outputPanel>
+      </apex:pageBlockSection>
+
+    </apex:pageBlock>
+  </apex:form>
+</apex:page>
+
+public class MatrixAdditionController {
+    public List<List<Integer>> matrixA { get; set; }
+    public List<List<Integer>> matrixB { get; set; }
+    public List<List<Integer>> resultMatrix { get; set; }
+
+    public Integer rows { get; set; }
+    public Integer cols { get; set; }
+
+    public MatrixAdditionController() {
+        rows = 2;
+        cols = 2;
+
+        // Initialize 2x2 matrices with sample data
+        matrixA = new List<List<Integer>>{
+            new List<Integer>{1, 2},
+            new List<Integer>{3, 4}
+        };
+        matrixB = new List<List<Integer>>{
+            new List<Integer>{5, 6},
+            new List<Integer>{7, 8}
+        };
+        resultMatrix = new List<List<Integer>>();
+    }
+
+    public void addMatrices() {
+        resultMatrix.clear();
+        for (Integer i = 0; i < rows; i++) {
+            List<Integer> resultRow = new List<Integer>();
+            for (Integer j = 0; j < cols; j++) {
+                Integer sum = matrixA[i][j] + matrixB[i][j];
+                resultRow.add(sum);
+            }
+            resultMatrix.add(resultRow);
+        }
+    }
+}
+
+<apex:page controller="MatrixAdditionController">
+    <apex:form>
+        <apex:pageBlock title="Matrix Addition (2x2)">
+            <apex:commandButton value="Add Matrices" action="{!addMatrices}" rerender="result" />
+
+            <apex:pageBlockSection title="Matrix A" columns="1">
+                <apex:dataTable value="{!matrixA}" var="row">
+                    <apex:column>
+                        <apex:repeat value="{!row}" var="col">
+                            <apex:outputText value="{!col}" style="padding:10px;"/>
+                        </apex:repeat>
+                    </apex:column>
+                </apex:dataTable>
+            </apex:pageBlockSection>
+
+            <apex:pageBlockSection title="Matrix B" columns="1">
+                <apex:dataTable value="{!matrixB}" var="row">
+                    <apex:column>
+                        <apex:repeat value="{!row}" var="col">
+                            <apex:outputText value="{!col}" style="padding:10px;"/>
+                        </apex:repeat>
+                    </apex:column>
+                </apex:dataTable>
+            </apex:pageBlockSection>
+
+            <apex:pageBlockSection id="result" title="Result Matrix" columns="1">
+                <apex:dataTable value="{!resultMatrix}" var="row">
+                    <apex:column>
+                        <apex:repeat value="{!row}" var="col">
+                            <apex:outputText value="{!col}" style="padding:10px;"/>
+                        </apex:repeat>
+                    </apex:column>
+                </apex:dataTable>
+            </apex:pageBlockSection>
+
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>
+
+public class Salesforce {
+    public Decimal number1 { get; set; }
+    public Decimal number2 { get; set; }
+    public String selectedOperation { get; set; }
+    public String result { get; set; }
+
+    public void calculate() {
+        try {
+            if (selectedOperation == 'add') {
+                result = String.valueOf(number1 + number2);
+            } else if (selectedOperation == 'subtract') {
+                result = String.valueOf(number1 - number2);
+            } else if (selectedOperation == 'multiply') {
+                result = String.valueOf(number1 * number2);
+            } else if (selectedOperation == 'divide') {
+                if (number2 != 0) {
+                    result = String.valueOf(number1 / number2);
+                } else {
+                    result = 'Error: Division by zero';
+                }
+            } else if (selectedOperation == 'power') {
+                Double base = Double.valueOf(number1);
+                Double exponent = Double.valueOf(number2);
+                result = String.valueOf(Math.pow(base, exponent));
+            } else if (selectedOperation == 'sqrt') {
+                if (number1 >= 0) {
+                    Double value = Double.valueOf(number1);
+                    result = String.valueOf(Math.sqrt(value));
+                } else {
+                    result = 'Error: Negative input for sqrt';
+                }
+            } else if (selectedOperation == 'log') {
+                if (number1 > 0) {
+                    Double value = Double.valueOf(number1);
+                    result = String.valueOf(Math.log10(value));
+                } else {
+                    result = 'Error: Log of non-positive number';
+                }
+            } else {
+                result = 'Invalid Operation';
+            }
+        } catch (Exception e) {
+            result = 'Error: ' + e.getMessage();
+        }
+    }
+}
+
+<apex:page controller="Salesforce">
+    <apex:form>
+        <apex:pageBlock title="Scientific Calculator">
+            <apex:pageBlockSection columns="2">
+
+                <apex:inputText value="{!number1}" label="Number 1"/>
+                <apex:inputText value="{!number2}" label="Number 2"/>
+
+                <apex:selectList value="{!selectedOperation}" size="1" label="Select Operation">
+                    <apex:selectOption itemLabel="Addition (+)" itemValue="add"/>
+                    <apex:selectOption itemLabel="Subtraction (-)" itemValue="subtract"/>
+                    <apex:selectOption itemLabel="Multiplication (*)" itemValue="multiply"/>
+                    <apex:selectOption itemLabel="Division (/)" itemValue="divide"/>
+                    <apex:selectOption itemLabel="Power (x^y)" itemValue="power"/>
+                    <apex:selectOption itemLabel="Square Root (√x)" itemValue="sqrt"/>
+                    <apex:selectOption itemLabel="Logarithm (log10(x))" itemValue="log"/>
+                </apex:selectList>
+
+                <apex:commandButton value="Calculate" action="{!calculate}" rerender="resultPanel"/>
+
+            </apex:pageBlockSection>
+
+            <apex:outputPanel id="resultPanel">
+                <apex:pageBlockSection title="Result" columns="1">
+                    <apex:outputText value="{!result}" style="font-weight:bold; color:blue;"/>
+                </apex:pageBlockSection>
+            </apex:outputPanel>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>
