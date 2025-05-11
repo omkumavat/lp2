@@ -96,7 +96,7 @@ public:
 
 int main()
 {
-    int n = 4;
+    int n = 8;
 
     cout << "== Backtracking Solution ==\n";
     BacktrackingSolver btSolver;
